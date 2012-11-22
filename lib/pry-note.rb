@@ -1,3 +1,5 @@
+Pry.config.notes_file = "./notes.yml"
+
 Pry::Commands.create_command "note" do
   description "Note stuff."
 
@@ -5,7 +7,8 @@ Pry::Commands.create_command "note" do
     Usage: note [OPTIONS]
     Add notes to classes and methods.
 
-    e.g note -a Pry#repl   #=> add a note to Pry#repl method
+    e.g note -a Pry#repl "this is my note" #=> add a note without opening editor
+    e.g note -a Pry#repl   #=> add a note (with editor) to Pry#repl method
     e.g note -d Pry#repl:1 #=> delete the 1st note from Pry#repl
     e.g note -d Pry#repl   #=> delete all notes from Pry#repl
     e.g note -l            #=> list all notes
@@ -19,6 +22,7 @@ Pry::Commands.create_command "note" do
     opt.on :e, :export, "Export notes to a file.", :argument => :optional
     opt.on :load, "Load notes from a file.", :argument => :optional
     opt.on :l, :list, "List all notes."
+    opt.on "list-all", "List all notes with content."
   end
 
   def setup
@@ -58,8 +62,19 @@ Pry::Commands.create_command "note" do
       delete_note(opts[:d])
     elsif opts.present?(:"delete-all")
       notes.replace({})
-    elsif opts.present(:load)
+    elsif opts.present?(:"list-all")
+      list_all
+    elsif opts.present?(:load)
       load_notes(opts[:load])
+    else
+      meth = Pry::Method.from_binding(target)
+      if internal_binding?(target) || !meth
+        obj = target.eval("self")
+        obj_name = o.is_a?(Module) ? obj.name : obj.class.name
+        add_note(obj_name)
+      else
+        add_note(meth.name_with_owner)
+      end
     end
   end
 
@@ -81,10 +96,17 @@ Pry::Commands.create_command "note" do
 
   def add_note(name)
     co_name = code_object_name(retrieve_code_object_safely(name))
-    note = edit_note(co_name)
+
+    if args.any?
+      note = args.join(" ")
+    else
+      note = edit_note(co_name)
+    end
 
     notes[co_name] ||= []
     notes[co_name] << note
+
+    output.puts "Added note to #{co_name}!"
   end
 
   def delete_note(name)
@@ -99,7 +121,7 @@ Pry::Commands.create_command "note" do
       output.puts "Deleted note #{note_number} for #{co_name}!"
     else
       notes.delete(co_name)
-      output.puts "Deleted all notes for #{co_name}!"
+      output.puts "Deleted all notes for #{text.bold(co_name)}!"
     end
   end
 
@@ -109,21 +131,20 @@ Pry::Commands.create_command "note" do
     co_name = code_object_name(code_object)
 
     if !notes.has_key?(co_name)
-      output.puts "No notes saved for #{co_name}"
+      output.puts "No notes saved for #{text.bold(co_name)}"
       return
     end
 
-    output.puts "Showing note(s) for #{co_name}:"
+    output.puts text.bold("#{co_name}:\n--")
 
     notes[code_object_name(code_object)].each_with_index do |note, index|
-      output.puts "\nNote #{index + 1}:\n--"
-      output.puts note
+      output.puts "\nNote #{text.bold((index + 1).to_s)}: #{note}"
     end
   end
 
   def export_notes(file_name=nil)
     require 'yaml'
-    file_name ||= "./notes.yml"
+    file_name ||= Pry.config.notes_file
 
     expanded_path = File.expand_path(file_name)
     File.open(expanded_path, "w") { |f| f.puts YAML.dump(notes) }
@@ -132,7 +153,7 @@ Pry::Commands.create_command "note" do
 
   def load_notes(file_name=nil)
     require 'yaml'
-    file_name ||= "./notes.yml"
+    file_name ||= Pry.config.notes_file
 
     expanded_path = File.expand_path(file_name)
     if File.exists?(expanded_path)
@@ -140,12 +161,29 @@ Pry::Commands.create_command "note" do
     end
   end
 
+  def list_all
+    if notes.any?
+      output.puts text.bold("Showing all available notes:\n\n")
+      notes.each do |key, content|
+        begin
+          show_note(key)
+          output.puts "\n"
+        rescue
+        end
+      end
+
+      output.puts "\nTo view notes for an item type, e.g: `note -s Klass#method`"
+    else
+      output.puts "No notes available."
+    end
+  end
+
   def list_notes
     if notes.any?
-      output.puts "Showing all available notes:\n\n"
+      output.puts text.bold("Showing all available notes:\n\n")
       notes.each do |key, content|
         if retrieve_code_object_from_string(key, target)
-          output.puts "#{key} has #{content.count} notes"
+          output.puts "#{text.bold(key)} has #{content.count} notes"
         end
       end
 
@@ -157,7 +195,6 @@ Pry::Commands.create_command "note" do
 
   def add_reminders
     me = self
-    max_length = 40
     reminder = proc do
       begin
         code_object = retrieve_code_object_from_string(args.first.to_s, target)
@@ -166,13 +203,16 @@ Pry::Commands.create_command "note" do
           output.puts "\n\n#{text.bold("Notes:")}\n--\n\n"
 
           me.notes[me.code_object_name(code_object)].each_with_index do |note, index|
-            clipped_note = note.lines.count < 3  ? note : note.lines.to_a[0..2].join + text.bold("<...clipped...>") + " Use `note -s #{co_name}` to view unelided notes."
-            amended_note = clipped_note.lines.each_with_index.map { |line, idx| idx > 0 ? "#{' ' * ((index + 1).to_s.size + 2)}#{line}" : line }.join
+            clipped_note = note.lines.count < 3  ? note : note.lines.to_a[0..2].join +
+              text.bold("<...clipped...>") + " Use `note -s #{co_name}` to view unelided notes."
+            amended_note = clipped_note.lines.each_with_index.map do |line, idx|
+              idx > 0 ? "#{' ' * ((index + 1).to_s.size + 2)}#{line}" : line
+            end.join
             output.puts "#{text.bold((index + 1).to_s)}. #{amended_note}"
           end
 
         end
-        rescue
+      rescue
       end
     end
 
