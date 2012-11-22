@@ -70,7 +70,7 @@ Pry::Commands.create_command "note" do
       meth = Pry::Method.from_binding(target)
       if internal_binding?(target) || !meth
         obj = target.eval("self")
-        obj_name = o.is_a?(Module) ? obj.name : obj.class.name
+        obj_name = obj.is_a?(Module) ? obj.name : obj.class.name
         add_note(obj_name)
       else
         add_note(meth.name_with_owner)
