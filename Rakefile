@@ -6,7 +6,7 @@ direc = File.dirname(__FILE__)
 PROJECT_NAME = "pry-note"
 
 require 'rake/clean'
-require 'rake/gempackagetask'
+require 'rubygems/package_task'
 require "#{PROJECT_NAME}/version"
 
 CLOBBER.include("**/*~", "**/*#*", "**/*.log")
@@ -28,10 +28,20 @@ def apply_spec_defaults(s)
   s.test_files = `git ls-files -- test/*`.split("\n")
 end
 
+desc "Set up and run tests"
+task :default => [:test]
+
+
 desc "run pry with plugin enabled"
 task :pry do
   exec("pry -rubygems -I#{direc}/lib/ -r #{direc}/lib/#{PROJECT_NAME}")
 end
+
+desc "Run tests"
+task :test do
+  sh "bacon -Itest -rubygems -a -q"
+end
+task :spec => :test
 
 desc "Show version"
 task :version do
@@ -47,7 +57,7 @@ namespace :ruby do
     s.platform = Gem::Platform::RUBY
   end
 
-  Rake::GemPackageTask.new(spec) do |pkg|
+  Gem::PackageTask.new(spec) do |pkg|
     pkg.need_zip = false
     pkg.need_tar = false
   end
