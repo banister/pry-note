@@ -17,9 +17,12 @@ Pry::Commands.create_command "note" do
       opt.on :m, "message", "Provide the note inline (without opening an editor).", :argument => true
     end
 
-    cmd.on :show
+    cmd.on :show  do |opt|
+      opt.on :v, :verbose, "Show all notes together with source code."
+    end
+
     cmd.on :list do |opt|
-      opt.on :v, :verbose, "List all notes and content with source code"
+      opt.on :v, :verbose, "List all notes and content with source code."
     end
     cmd.on :export
     cmd.on :load
@@ -52,7 +55,8 @@ Pry::Commands.create_command "note" do
       cmd_opts = opts[:add]
       add_note(opts.arguments.first, cmd_opts[:message])
     elsif opts.command?(:show)
-      show_note(opts.arguments.first)
+      cmd_opts = opts[:show]
+      show_note(opts.arguments.first, cmd_opts[:verbose])
     elsif opts.command?(:list)
       cmd_opts = opts[:list]
       if cmd_opts.present?(:verbose)
@@ -110,9 +114,6 @@ Pry::Commands.create_command "note" do
 
   def add_note(name, message=nil)
     name ||= default_object_name
-    name, line_number = name.split(/@(\d+)$/)
-
-
     co_name = code_object_name(retrieve_code_object_safely(name))
 
     if message
@@ -170,9 +171,8 @@ Pry::Commands.create_command "note" do
     end
   end
 
-  def show_note(name)
+  def show_note(name, verbose=false)
     code_object = retrieve_code_object_safely(name)
-
     co_name = code_object_name(code_object)
 
     if !notes.has_key?(co_name)
@@ -181,7 +181,10 @@ Pry::Commands.create_command "note" do
     end
 
     output.puts text.bold("#{co_name}:\n--")
-    output.puts Pry::Code.new(code_object.source, code_object.source_line).with_line_numbers.to_s
+
+    if verbose
+      output.puts Pry::Code.new(code_object.source, code_object.source_line).with_line_numbers.to_s
+    end
     notes[code_object_name(code_object)].each_with_index do |note, index|
       output.puts "\nNote #{text.bold((index + 1).to_s)}: #{note}"
     end
@@ -192,13 +195,13 @@ Pry::Commands.create_command "note" do
       output.puts text.bold("Showing all available notes:\n\n")
       notes.each do |key, content|
         begin
-          show_note(key)
+          show_note(key, true)
           output.puts "\n"
         rescue
         end
       end
 
-      output.puts "\nTo view notes for an item type, e.g: `note -s Klass#method`"
+      output.puts "\nTo view notes for an item type, e.g: `note show Klass#method`"
     else
       output.puts "No notes available."
     end
@@ -208,12 +211,15 @@ Pry::Commands.create_command "note" do
     if notes.any?
       output.puts text.bold("Showing all available notes:\n\n")
       notes.each do |key, content|
-        if retrieve_code_object_from_string(key, target)
-          output.puts "#{text.bold(key)} has #{content.count} notes"
+        begin
+          if retrieve_code_object_from_string(key, target)
+            output.puts "#{text.bold(key)} has #{content.count} notes"
+          end
+        rescue
         end
       end
 
-      output.puts "\nTo view notes for an item type, e.g: `note -s Klass#method`"
+      output.puts "\nTo view notes for an item type, e.g: `note show Klass#method`"
     else
       output.puts "No notes available."
     end
