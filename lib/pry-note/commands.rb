@@ -32,14 +32,6 @@ Pry::Commands.create_command "note" do
     end
   end
 
-  def options(opt)
-    opt.on :a, :add, "Add a note to a method or class.", :argument => true
-    opt.on :s, :show, "Show any notes associated with the given method or class.", :argument => true
-    opt.on :d, :delete, "Delete notes for a method or class.", :argument => true
-    opt.on "delete-all", "Delete all notes."
-    opt.on "list-all", "List all notes with content."
-  end
-
   def notes() PryNote.notes ||= {} end
   def notes=(o) PryNote.notes = o; end
 

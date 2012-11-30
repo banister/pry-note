@@ -149,20 +149,28 @@ describe PryNote do
   end
 
   describe "note edit" do
-    it 'should error when not given a note number' do
-      @t.process_command "note add PryNote::TestClass -m 'my note1'"
+    describe "errors" do
+      it 'should error when not given a note number' do
+        @t.process_command "note add PryNote::TestClass -m 'my note1'"
 
-      capture_exception do
-        @t.process_command "note edit PryNote::TestClass -m 'bing'"
-      end.message.should =~ /Must specify a note number/
-    end
+        capture_exception do
+          @t.process_command "note edit PryNote::TestClass -m 'bing'"
+        end.message.should =~ /Must specify a note number/
+      end
 
-    it 'should error when given out of range note number' do
-      @t.process_command "note add PryNote::TestClass -m 'my note1'"
+      it 'should error when given out of range note number' do
+        @t.process_command "note add PryNote::TestClass -m 'my note1'"
 
-      capture_exception do
-        @t.process_command "note edit PryNote::TestClass:2 -m 'bing'"
-      end.message.should =~ /Invalid note number/
+        capture_exception do
+          @t.process_command "note edit PryNote::TestClass:2 -m 'bing'"
+        end.message.should =~ /Invalid note number/
+      end
+
+      it 'should error when editing object with no notes' do
+        capture_exception do
+          @t.process_command "note edit PryNote::TestClass:2 -m 'bing'"
+        end.message.should =~ /No notes to edit/
+      end
     end
 
     describe "-m switch" do
