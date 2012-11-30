@@ -6,6 +6,16 @@ class PryNote::TestClass
   end
 end
 
+def capture_exception
+  ex = nil
+  begin
+    yield
+  rescue Exception => e
+    ex = e
+  end
+  ex
+end
+
 describe PryNote do
   before do
     Pad.obj = PryNote::TestClass.new
@@ -31,6 +41,12 @@ describe PryNote do
         Pry.config.editor = proc { nil }
         @t.process_command "note add PryNote::TestClass"
         PryNote.notes["PryNote::TestClass"].count.should == 1
+      end
+
+      it 'should put default note content in file' do
+        Pry.config.editor = proc { nil }
+        @t.process_command "note add PryNote::TestClass"
+        PryNote.notes["PryNote::TestClass"].first.should =~ /Enter note content here/
       end
     end
 
@@ -129,7 +145,33 @@ describe PryNote do
         PryNote.notes["PryNote::TestClass"].first.should =~ /my note1/
         PryNote.notes["PryNote::TestClass"].last.should =~ /my note3/
       end
+    end
+  end
 
+  describe "note edit" do
+    it 'should error when not given a note number' do
+      @t.process_command "note add PryNote::TestClass -m 'my note1'"
+
+      capture_exception do
+        @t.process_command "note edit PryNote::TestClass -m 'bing'"
+      end.message.should =~ /Must specify a note number/
+    end
+
+    it 'should error when given out of range note number' do
+      @t.process_command "note add PryNote::TestClass -m 'my note1'"
+
+      capture_exception do
+        @t.process_command "note edit PryNote::TestClass:2 -m 'bing'"
+      end.message.should =~ /Invalid note number/
+    end
+
+    describe "-m switch" do
+      it 'should amend the content of a note' do
+        @t.process_command "note add PryNote::TestClass -m 'my note1'"
+        @t.process_command "note edit PryNote::TestClass:1 -m 'bing'"
+        PryNote.notes["PryNote::TestClass"].count.should == 1
+        PryNote.notes["PryNote::TestClass"].first.should =~ /bing/
+      end
     end
   end
 

@@ -14,7 +14,7 @@ Pry::Commands.create_command "note" do
 
   def subcommands(cmd)
     cmd.on :add do |opt|
-      opt.on :m, "message", "Show the list of all available plugins", :argument => true
+      opt.on :m, "message", "Provide the note inline (without opening an editor).", :argument => true
     end
 
     cmd.on :show
@@ -25,6 +25,10 @@ Pry::Commands.create_command "note" do
     cmd.on :load
     cmd.on :delete do |opt|
       opt.on :all, "Delete all notes."
+    end
+
+    cmd.on :edit do |opt|
+      opt.on :m, "message", "Update the note inline (without opening an editor).", :argument => true
     end
   end
 
@@ -40,9 +44,10 @@ Pry::Commands.create_command "note" do
   def notes=(o) PryNote.notes = o; end
 
   # edit a note in a temporary file and return note content
-  def edit_note(obj_name)
+  def edit_note(obj_name, initial_content=nil)
+    initial_content ||= "Enter note content here for #{obj_name} (and erase this line)"
     temp_file do |f|
-      f.puts("Enter note content here for #{obj_name} (and erase this line)")
+      f.puts(initial_content)
       f.flush
       f.close(false)
       invoke_editor(f.path, 1, false)
@@ -63,6 +68,9 @@ Pry::Commands.create_command "note" do
       else
         list_notes
       end
+    elsif opts.command?(:edit)
+      cmd_opts = opts[:edit]
+      reedit_note(opts.arguments.first, cmd_opts[:message])
     elsif opts.command?(:export)
       f = opts.arguments.first
       PryNote.export_notes(f)
@@ -125,6 +133,33 @@ Pry::Commands.create_command "note" do
     notes[co_name] << note
 
     output.puts "Added note to #{co_name}!"
+  end
+
+  def reedit_note(name, message=nil)
+    name, note_number_s = name.split(/:(\d+)$/)
+    co_name = code_object_name(retrieve_code_object_safely(name))
+    raise Pry::CommandError, "No notes to edit!" if !notes[co_name]
+
+    total_notes = notes[co_name].count
+    note_number = note_number_s.to_i
+
+    if !notes[co_name]
+      output.puts "No notes to edit for #{co_name}!"
+    elsif !note_number_s
+      raise Pry::CommandError, "Must specify a note number. Allowable range is 1-#{total_notes}."
+    elsif note_number < 1 || note_number > total_notes
+      raise Pry::CommandError,  "Invalid note number (#{note_number}). Allowable range is 1-#{total_notes}."
+    else
+      if message
+        new_content = message
+      else
+        old_content = notes[co_name][note_number.to_i - 1]
+        new_content = edit_note(co_name, old_content.to_s)
+      end
+
+      notes[co_name][note_number.to_i - 1] = new_content
+      output.puts "Updated note #{note_number} for #{co_name}!"
+    end
   end
 
   def delete_note(name)
