@@ -1,19 +1,10 @@
 require 'helper'
 
+# useful test class
 class PryNote::TestClass
   def ping
     binding
   end
-end
-
-def capture_exception
-  ex = nil
-  begin
-    yield
-  rescue Exception => e
-    ex = e
-  end
-  ex
 end
 
 describe PryNote do
@@ -180,6 +171,44 @@ describe PryNote do
         PryNote.notes["PryNote::TestClass"].count.should == 1
         PryNote.notes["PryNote::TestClass"].first.should =~ /bing/
       end
+    end
+  end
+
+  describe "note show" do
+    it 'should display method source when -v flag is used' do
+      @t.process_command "note add PryNote::TestClass -m 'my note1'"
+      @t.process_command "note show PryNote::TestClass -v"
+      @t.last_output.should =~ /ping/
+    end
+
+    it 'should just display number of notes by default' do
+      @t.process_command "note add PryNote::TestClass -m 'my note1'"
+      @t.process_command "note add PryNote::TestClass -m 'my note2'"
+      @t.process_command "note show PryNote::TestClass"
+      @t.last_output.should =~ /2/
+      @t.last_output.should.not =~ /ping/
+    end
+
+    it 'should ignore :number suffix (as used in edit and delete)' do
+      @t.process_command "note add PryNote::TestClass -m 'my note2'"
+      @t.process_command "note show PryNote::TestClass:99"
+      @t.last_output.should =~ /1/
+    end
+
+    it 'should implicitly display notes for current object (class)' do
+      @t.process_command "note add PryNote::TestClass -m 'my note1'"
+      @t.process_command "note add PryNote::TestClass -m 'my note2'"
+      @t.process_command "cd PryNote::TestClass"
+      @t.process_command "note show -v"
+      @t.last_output.should =~ /ping/
+    end
+
+    it 'should implicitly display notes for current object (method)' do
+      t = pry_tester(Pad.obj.ping)
+      t.process_command "note add PryNote::TestClass#ping -m 'my note1'"
+      t.process_command "note add PryNote::TestClass#ping -m 'my note2'"
+      t.process_command "note show -v"
+      t.last_output.should =~ /binding/
     end
   end
 

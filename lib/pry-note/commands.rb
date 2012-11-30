@@ -56,7 +56,7 @@ Pry::Commands.create_command "note" do
       add_note(opts.arguments.first, cmd_opts[:message])
     elsif opts.command?(:show)
       cmd_opts = opts[:show]
-      show_note(opts.arguments.first, cmd_opts[:verbose])
+      stagger_output create_note_output(opts.arguments.first, cmd_opts[:verbose])
     elsif opts.command?(:list)
       cmd_opts = opts[:list]
       if cmd_opts.present?(:verbose)
@@ -82,6 +82,7 @@ Pry::Commands.create_command "note" do
     elsif opts.command?(:load)
       PryNote.load_notes(opts.arguments.first)
     else
+      output.puts opts.to_s
     end
   end
 
@@ -136,8 +137,9 @@ Pry::Commands.create_command "note" do
     total_notes = notes[co_name].count
     note_number = note_number_s.to_i
 
+    out = ""
     if !notes[co_name]
-      output.puts "No notes to edit for #{co_name}!"
+      out << "No notes to edit for #{co_name}!\n"
     elsif !note_number_s
       raise Pry::CommandError, "Must specify a note number. Allowable range is 1-#{total_notes}."
     elsif note_number < 1 || note_number > total_notes
@@ -151,7 +153,7 @@ Pry::Commands.create_command "note" do
       end
 
       notes[co_name][note_number.to_i - 1] = new_content
-      output.puts "Updated note #{note_number} for #{co_name}!"
+      out << "Updated note #{note_number} for #{co_name}!\n"
     end
   end
 
@@ -159,69 +161,83 @@ Pry::Commands.create_command "note" do
     name, note_number = name.split(/:(\d+)$/)
     co_name = code_object_name(retrieve_code_object_safely(name))
 
+    out = ""
     if !notes[co_name]
-      output.puts "No notes to delete for #{co_name}!"
+      out << "No notes to delete for #{co_name}!\n"
     elsif note_number
       notes[co_name].delete_at(note_number.to_i - 1)
       notes.delete(co_name) if notes[co_name].empty?
-      output.puts "Deleted note #{note_number} for #{co_name}!"
+      out << "Deleted note #{note_number} for #{co_name}!\n"
     else
       notes.delete(co_name)
-      output.puts "Deleted all notes for #{text.bold(co_name)}!"
+      out << "Deleted all notes for #{text.bold(co_name)}!\n"
     end
+
+    stagger_output out
   end
 
-  def show_note(name, verbose=false)
+  def create_note_output(name, verbose=false)
+    name ||= default_object_name
+    name, _ = name.split(/:(\d+)$/)
     code_object = retrieve_code_object_safely(name)
     co_name = code_object_name(code_object)
+
+    raise Pry::CommandError, "Please specify the name of a method or class." if !name
 
     if !notes.has_key?(co_name)
       output.puts "No notes saved for #{text.bold(co_name)}"
       return
     end
 
-    output.puts text.bold("#{co_name}:\n--")
+    out = ""
+    out << text.bold("#{co_name}:\n--\n")
 
     if verbose
-      output.puts Pry::Code.new(code_object.source, code_object.source_line).with_line_numbers.to_s
+      out << Pry::Code.new(code_object.source, code_object.source_line).with_line_numbers.to_s + "\n"
     end
     notes[code_object_name(code_object)].each_with_index do |note, index|
-      output.puts "\nNote #{text.bold((index + 1).to_s)}: #{note}"
+      out << "\nNote #{text.bold((index + 1).to_s)}: #{note}\n"
     end
+
+    out
   end
 
   def list_all
     if notes.any?
-      output.puts text.bold("Showing all available notes:\n\n")
+      out = ""
+      out << text.bold("Showing all available notes:\n\n")
       notes.each do |key, content|
         begin
-          show_note(key, true)
-          output.puts "\n"
+          out << create_note_output(key, true) << "\n"
         rescue
         end
       end
 
-      output.puts "\nTo view notes for an item type, e.g: `note show Klass#method`"
-    else
-      output.puts "No notes available."
+     else
+      out << "No notes available.\n"
     end
+
+    stagger_output out
   end
 
   def list_notes
     if notes.any?
-      output.puts text.bold("Showing all available notes:\n\n")
+      out = ""
+      out << text.bold("Showing all available notes:\n\n")
       notes.each do |key, content|
         begin
           if retrieve_code_object_from_string(key, target)
-            output.puts "#{text.bold(key)} has #{content.count} notes"
+            out << "#{text.bold(key)} has #{content.count} notes\n"
           end
         rescue
         end
       end
 
-      output.puts "\nTo view notes for an item type, e.g: `note show Klass#method`"
+      out << "\nTo view notes for a specific item, e.g: `note show Klass#method`\n"
     else
-      output.puts "No notes available."
+      out << "No notes available.\n"
     end
+
+    stagger_output out
   end
 end

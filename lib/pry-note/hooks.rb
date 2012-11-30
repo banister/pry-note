@@ -7,7 +7,7 @@ reminder = proc do
 
       PryNote.notes[co_name].each_with_index do |note, index|
         clipped_note = note.lines.count < 3  ? note : note.lines.to_a[0..2].join +
-          text.bold("<...clipped...>") + " Use `note -s #{co_name}` to view unelided notes."
+          text.bold("<...clipped...>") + " Use `note show #{co_name}` to view unelided notes."
         amended_note = clipped_note.lines.each_with_index.map do |line, idx|
           idx > 0 ? "#{' ' * ((index + 1).to_s.size + 2)}#{line}" : line
         end.join
