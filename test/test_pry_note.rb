@@ -19,6 +19,21 @@ describe PryNote do
   end
 
   describe "note add" do
+    describe "opens an editor when -m flag not provided" do
+      it 'should open the editor' do
+        used_editor = nil
+        Pry.config.editor = proc { used_editor = true; nil }
+        @t.process_command "note add PryNote::TestClass"
+        used_editor.should == true
+      end
+
+      it 'should save the note' do
+        Pry.config.editor = proc { nil }
+        @t.process_command "note add PryNote::TestClass"
+        PryNote.notes["PryNote::TestClass"].count.should == 1
+      end
+    end
+
     describe "explicit object" do
       it 'should add a new note for a method (bound method)' do
         @t.process_command "note add Pad.obj.ping -m 'my note'"
