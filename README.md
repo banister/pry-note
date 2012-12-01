@@ -3,6 +3,8 @@ Pry-note
 
 __Ease refactoring and exploration by attaching notes to methods and classes in Pry__
 
+**NOTE: This only works on Pry HEAD currently (v0.9.11+)**
+
 ```
 [1] pry(main)> note -h
   add
