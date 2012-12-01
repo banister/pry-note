@@ -185,8 +185,7 @@ Pry::Commands.create_command "note" do
     raise Pry::CommandError, "Please specify the name of a method or class." if !name
 
     if !notes.has_key?(co_name)
-      output.puts "No notes saved for #{text.bold(co_name)}"
-      return
+      raise Pry::CommandError, "No notes saved for #{text.bold(co_name)}"
     end
 
     out = ""
@@ -196,7 +195,7 @@ Pry::Commands.create_command "note" do
       out << Pry::Code.new(code_object.source, code_object.source_line).with_line_numbers.to_s + "\n"
     end
     notes[code_object_name(code_object)].each_with_index do |note, index|
-      out << "\nNote #{text.bold((index + 1).to_s)}: #{note}\n"
+      out << "\nNote #{text.bold((index + 1).to_s)}: #{note}"
     end
 
     out
