@@ -26,11 +26,11 @@ __Ease refactoring and exploration by attaching notes to methods and classes in 
 Usage: note [OPTIONS]
 Add notes to classes and methods.
 
-e.g note -a Pry#repl "this is my note" #=> add a note without opening editor
-e.g note -a Pry#repl   #=> add a note (with editor) to Pry#repl method
-e.g note -d Pry#repl:1 #=> delete the 1st note from Pry#repl
-e.g note -d Pry#repl   #=> delete all notes from Pry#repl
-e.g note -l            #=> list all notes
+e.g note add Pry#repl -m "this is my note" #=> add a note without opening editor
+e.g note add Pry#repl   #=> add a note (with editor) to Pry#repl method
+e.g note delete Pry#repl:1 #=> delete the 1st note from Pry#repl
+e.g note delete Pry#repl   #=> delete all notes from Pry#repl
+e.g note list            #=> list all notes
 
     -h, --help      Show this message.
 ```
