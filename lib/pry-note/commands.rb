@@ -204,10 +204,10 @@ Pry::Commands.create_command "note" do
   def list_all
     if notes.any?
       out = ""
-      out << text.bold("Showing all available notes:\n\n")
+      out << text.bold("Showing all available notes:\n")
       notes.each do |key, content|
         begin
-          out << create_note_output(key, true) << "\n"
+          out << "\n" << create_note_output(key, true) << "\n"
         rescue
         end
       end
