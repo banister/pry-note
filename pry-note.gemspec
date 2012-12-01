@@ -9,7 +9,7 @@ Gem::Specification.new do |s|
   s.date = "2012-12-01"
   s.description = "Ease refactoring and exploration by attaching notes to methods and classes in Pry"
   s.email = "jrmair@gmail.com"
-  s.files = ["Rakefile", "lib/pry-note.rb", "lib/pry-note/commands.rb", "lib/pry-note/hooks.rb", "lib/pry-note/version.rb", "test/helper.rb", "test/test_pry_note.rb"]
+  s.files = ["Rakefile", "lib/pry-note.rb", "lib/pry-note/commands.rb", "lib/pry-note/hooks.rb", "lib/pry-note/version.rb", "pry-note.gemspec", "test/helper.rb", "test/test_pry_note.rb"]
   s.homepage = "https://github.com/banister"
   s.require_paths = ["lib"]
   s.rubygems_version = "1.8.23"
