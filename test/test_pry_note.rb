@@ -20,7 +20,7 @@ describe PryNote do
   end
 
   describe "note add" do
-    describe "opens an editor when -m flag not provided" do
+    describe "notes added with editor" do
       it 'should open the editor' do
         used_editor = nil
         Pry.config.editor = proc { used_editor = true; nil }
@@ -28,13 +28,13 @@ describe PryNote do
         used_editor.should == true
       end
 
-      it 'should save the note' do
+      it 'should store the added note' do
         Pry.config.editor = proc { nil }
         @t.process_command "note add PryNote::TestClass"
         PryNote.notes["PryNote::TestClass"].count.should == 1
       end
 
-      it 'should put default note content in file' do
+      it 'should use default content when none other given' do
         Pry.config.editor = proc { nil }
         @t.process_command "note add PryNote::TestClass"
         PryNote.notes["PryNote::TestClass"].first.should =~ /Enter note content here/
@@ -54,6 +54,12 @@ describe PryNote do
         PryNote.notes["PryNote::TestClass#ping"].first.should =~ /my note/
       end
 
+      it 'should add a new note for a command' do
+        @t.process_command "note add show-source -m 'my note'"
+        @t.last_output.should =~ /Added note to show-source/
+        PryNote.notes["show-source"].first.should =~ /my note/
+      end
+
       it 'should add a new note for a class' do
         @t.process_command "note add PryNote::TestClass -m 'my note'"
         @t.last_output.should =~ /Added note to PryNote::TestClass/
@@ -61,15 +67,15 @@ describe PryNote do
       end
     end
 
-    describe "implicit object" do
-      it 'should add a new note for class of object implicitly (without specifying object)' do
+    describe "implicit object ('current' object extracted from binding)" do
+      it 'should add a new note for class of current object, when not in a method context' do
         @t.process_command "cd 0"
         @t.process_command "note add -m 'my note'"
         @t.last_output.should =~ /Added note to Fixnum/
         PryNote.notes["Fixnum"].first.should =~ /my note/
       end
 
-      it 'should add a new note for a method implicitly (without specifying object)' do
+      it 'should add a new note for a method, when in method context' do
         o = PryNote::TestClass.new
         t = pry_tester(o.ping)
         t.process_command "note add -m 'my note'"
@@ -139,6 +145,19 @@ describe PryNote do
     end
   end
 
+  describe "note list" do
+    it 'should list note counts for each object' do
+      @t.process_command "note add PryNote::TestClass -m 'my note1'"
+      @t.process_command "note list"
+      @t.last_output.should =~ /PryNote::TestClass has 1 notes/
+    end
+
+    it 'should indicate when there are no notes available' do
+      @t.process_command "note list"
+      @t.last_output.should =~ /No notes available/
+    end
+  end
+
   describe "note edit" do
     describe "errors" do
       it 'should error when not given a note number' do
@@ -164,7 +183,7 @@ describe PryNote do
       end
     end
 
-    describe "-m switch" do
+    describe "-m switch (used to amend note inline and bypass editor)" do
       it 'should amend the content of a note' do
         @t.process_command "note add PryNote::TestClass -m 'my note1'"
         @t.process_command "note edit PryNote::TestClass:1 -m 'bing'"
@@ -175,12 +194,6 @@ describe PryNote do
   end
 
   describe "note show" do
-    it 'should display method source when -v flag is used' do
-      @t.process_command "note add PryNote::TestClass -m 'my note1'"
-      @t.process_command "note show PryNote::TestClass -v"
-      @t.last_output.should =~ /ping/
-    end
-
     it 'should just display number of notes by default' do
       @t.process_command "note add PryNote::TestClass -m 'my note1'"
       @t.process_command "note add PryNote::TestClass -m 'my note2'"
@@ -189,13 +202,19 @@ describe PryNote do
       @t.last_output.should.not =~ /ping/
     end
 
+    it 'should display method source when -v flag is used' do
+      @t.process_command "note add PryNote::TestClass -m 'my note1'"
+      @t.process_command "note show PryNote::TestClass -v"
+      @t.last_output.should =~ /ping/
+    end
+
     it 'should ignore :number suffix (as used in edit and delete)' do
       @t.process_command "note add PryNote::TestClass -m 'my note2'"
       @t.process_command "note show PryNote::TestClass:99"
       @t.last_output.should =~ /1/
     end
 
-    it 'should implicitly display notes for current object (class)' do
+    it 'should display notes for current object (class)' do
       @t.process_command "note add PryNote::TestClass -m 'my note1'"
       @t.process_command "note add PryNote::TestClass -m 'my note2'"
       @t.process_command "cd PryNote::TestClass"
@@ -203,12 +222,30 @@ describe PryNote do
       @t.last_output.should =~ /ping/
     end
 
-    it 'should implicitly display notes for current object (method)' do
+    it 'should display notes for current object (method)' do
       t = pry_tester(Pad.obj.ping)
       t.process_command "note add PryNote::TestClass#ping -m 'my note1'"
       t.process_command "note add PryNote::TestClass#ping -m 'my note2'"
       t.process_command "note show -v"
       t.last_output.should =~ /binding/
+    end
+
+    describe "command notes" do
+      it 'should show notes for a command' do
+        @t.process_command "note add show-source -m 'my note1'"
+        @t.process_command "note show show-source"
+        @t.last_output.should =~ /show-source/
+        @t.last_output.should =~ /my note1/
+      end
+
+      it 'should show command source when -v switch is used' do
+        @t.process_command "note add show-source -m 'my note1'"
+        @t.process_command "note show show-source -v"
+
+        # note this test may fail in future if we change command
+        # creation API
+        @t.last_output.should =~ /create_command/
+      end
     end
   end
 

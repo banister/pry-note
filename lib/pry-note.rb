@@ -24,4 +24,29 @@ module PryNote
     expanded_path = File.expand_path(file_name)
     File.open(expanded_path, "w") { |f| f.puts YAML.dump(PryNote.notes) }
   end
+
+  # @return [Pry::Method, Pry::WrappedModule, Pry::Command] The code_object
+  def self.retrieve_code_object_safely(name, target, _pry_)
+    code_object = Pry::Helpers::CommandHelpers.retrieve_code_object_from_string(name, target)  ||
+      _pry_.commands.find_command(name)
+
+    if !code_object
+      raise Pry::CommandError, "No code object found named #{name}"
+    elsif code_object.name.to_s == ""
+      raise Pry::CommandError, "Object #{name} doesn't have a proper name, can't create note"
+    end
+
+    code_object
+  end
+
+  # @return [String] the `name` of the code object
+  def self.code_object_name(co)
+    if co.is_a?(Pry::Method)
+      co.name_with_owner
+    elsif co.is_a?(Pry::WrappedModule)
+      co.name
+    elsif co <= Pry::Command
+      co.command_name
+    end
+  end
 end

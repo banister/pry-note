@@ -27,7 +27,7 @@ Pry::Commands.create_command "note" do
     cmd.on :export
     cmd.on :load
     cmd.on :delete do |opt|
-      opt.on :all, "Delete all notes."
+      opt.on :a, :all, "Delete all notes."
     end
 
     cmd.on :edit do |opt|
@@ -48,6 +48,10 @@ Pry::Commands.create_command "note" do
       invoke_editor(f.path, 1, false)
       File.read(f.path)
     end
+  end
+
+  def code_object_name(co)
+    PryNote.code_object_name(co)
   end
 
   def process
@@ -87,15 +91,7 @@ Pry::Commands.create_command "note" do
   end
 
   def retrieve_code_object_safely(name)
-    code_object = retrieve_code_object_from_string(name, target)
-
-    if !code_object
-      raise Pry::CommandError, "No code object found named #{name}"
-    elsif code_object.name.to_s == ""
-      raise Pry::CommandError, "Object #{name} doesn't have a proper name, can't create note"
-    end
-
-    code_object
+    PryNote.retrieve_code_object_safely(name, target, _pry_)
   end
 
   def default_object_name
@@ -107,10 +103,6 @@ Pry::Commands.create_command "note" do
     else
       meth.name_with_owner
     end
-  end
-
-  def code_object_name(co)
-    co.is_a?(Pry::Method) ? co.name_with_owner : co.name
   end
 
   def add_note(name, message=nil)
@@ -202,8 +194,8 @@ Pry::Commands.create_command "note" do
   end
 
   def list_all
+    out = ""
     if notes.any?
-      out = ""
       out << text.bold("Showing all available notes:\n")
       notes.each do |key, content|
         begin
@@ -220,12 +212,12 @@ Pry::Commands.create_command "note" do
   end
 
   def list_notes
+    out = ""
     if notes.any?
-      out = ""
       out << text.bold("Showing all available notes:\n\n")
       notes.each do |key, content|
         begin
-          if retrieve_code_object_from_string(key, target)
+          if retrieve_code_object_safely(key)
             out << "#{text.bold(key)} has #{content.count} notes\n"
           end
         rescue

@@ -1,7 +1,7 @@
 reminder = proc do
   begin
-    co = Pry::Helpers::CommandHelpers.retrieve_code_object_from_string(args.first.to_s, target)
-    co_name = co.is_a?(Pry::Method) ? co.name_with_owner : co.name
+    co = PryNote.retrieve_code_object_safely(args.first.to_s, target, _pry_)
+    co_name = PryNote.code_object_name(co)
     if PryNote.notes.keys.include?(co_name)
       output.puts "\n\n#{text.bold("Notes:")}\n--\n\n"
 
