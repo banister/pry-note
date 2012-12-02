@@ -179,7 +179,7 @@ describe PryNote do
       it 'should error when editing object with no notes' do
         capture_exception do
           @t.process_command "note edit PryNote::TestClass:2 -m 'bing'"
-        end.message.should =~ /No notes to edit/
+        end.message.should =~ /No notes available/
       end
     end
 
