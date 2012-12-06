@@ -22,7 +22,10 @@ module PryNote
     return if !file_name && !Pry.config.notes_file
     file_name ||= Pry.config.notes_file
     expanded_path = File.expand_path(file_name)
-    File.open(expanded_path, "w") { |f| f.puts YAML.dump(PryNote.notes) }
+
+    if PryNote.notes && PryNote.notes.any?
+      File.open(expanded_path, "w") { |f| f.puts YAML.dump(PryNote.notes) }
+    end
   end
 
   # @return [Pry::Method, Pry::WrappedModule, Pry::Command] The code_object
