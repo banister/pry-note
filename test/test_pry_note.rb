@@ -264,6 +264,15 @@ describe PryNote do
       end
     end
 
+    it 'should not export when there are no notes' do
+      cleanup_file("bing.yml") do
+        Pry.config.notes_file = "bing.yml"
+        @t.process_command "note export"
+        o = File.exists?(Pry.config.notes_file).should == false
+        Pry.config.notes_file = nil
+      end
+    end
+
     it 'should export to specified file' do
       cleanup_file("blah.yml") do
         @t.process_command "note add PryNote::TestClass -m 'my note1'"
