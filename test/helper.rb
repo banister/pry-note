@@ -14,6 +14,11 @@ ensure
   File.unlink(f) if File.exists?(f)
 end
 
+Pad = OpenStruct.new
+def Pad.clear
+  @table = {}
+end
+
 # Return any raised exceptino objects inside the block
 def capture_exception
   ex = nil
