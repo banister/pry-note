@@ -160,14 +160,6 @@ describe PryNote do
 
   describe "note edit" do
     describe "errors" do
-      it 'should error when not given a note number' do
-        @t.process_command "note add PryNote::TestClass -m 'my note1'"
-
-        capture_exception do
-          @t.process_command "note edit PryNote::TestClass -m 'bing'"
-        end.message.should =~ /Must specify a note number/
-      end
-
       it 'should error when given out of range note number' do
         @t.process_command "note add PryNote::TestClass -m 'my note1'"
 
@@ -181,6 +173,16 @@ describe PryNote do
           @t.process_command "note edit PryNote::TestClass:2 -m 'bing'"
         end.message.should =~ /No notes available/
       end
+    end
+
+    it 'should edit last note when not given a note number' do
+      @t.process_command "note add PryNote::TestClass -m 'my note1'"
+      @t.process_command "note add PryNote::TestClass -m 'my note2'"
+      @t.process_command "note add PryNote::TestClass -m 'my note3'"
+
+      @t.process_command "note edit PryNote::TestClass -m 'modified note'"
+      PryNote.notes["PryNote::TestClass"].count.should == 3
+      PryNote.notes["PryNote::TestClass"].last.should =~ /modified note/
     end
 
     it 'should amend the content of a note with -m' do

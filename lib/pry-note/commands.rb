@@ -123,20 +123,16 @@ Pry::Commands.create_command "note" do
 
   # @param [String] co_name Name of note object.
   # @param [String, nil] note_number_s The note number as a string
-  # @param [Boolean] must_provide_number Whether note number is
-  #   allowed to be nil.
-  def ensure_note_number_in_range(co_name, note_number_s, must_provide_number=true)
+  def ensure_note_number_in_range(co_name, note_number_s)
     if notes[co_name]
       total_notes = notes[co_name].count
     else
       raise Pry::CommandError, "No notes available for #{co_name}"
     end
 
-    if !note_number_s && !must_provide_number
+    if !note_number_s
       # we're allowed nil, so just return
       return
-    elsif !note_number_s
-      raise Pry::CommandError, "Must specify a note number. Allowable range is 1-#{total_notes}."
     elsif note_number_s.to_i < 1 || note_number_s.to_i > total_notes
       raise Pry::CommandError,  "Invalid note number (#{note_number_s}). Allowable range is 1-#{total_notes}."
     end
@@ -147,23 +143,24 @@ Pry::Commands.create_command "note" do
     co_name = code_object_name(retrieve_code_object_safely(name))
 
     ensure_note_number_in_range(co_name, note_number_s)
+    note_number_i = note_number_s ? note_number_s.to_i : notes[co_name].count
 
     if message
       new_content = message
     else
-      old_content = notes[co_name][note_number_s.to_i - 1]
+      old_content = notes[co_name][note_number_i - 1]
       new_content = edit_note(co_name, old_content.to_s)
     end
 
-    notes[co_name][note_number_s.to_i - 1] = new_content
-    output.puts "Updated note #{note_number_s} for #{co_name}!\n"
+    notes[co_name][note_number_i - 1] = new_content
+    output.puts "Updated note #{note_number_i} for #{co_name}!\n"
   end
 
   def delete_note(name)
     name, note_number_s = name.split(/:(\d+)$/)
     co_name = code_object_name(retrieve_code_object_safely(name))
 
-    ensure_note_number_in_range(co_name, note_number_s, false)
+    ensure_note_number_in_range(co_name, note_number_s)
 
     if note_number_s
       notes[co_name].delete_at(note_number_s.to_i - 1)
