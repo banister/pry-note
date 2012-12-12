@@ -183,13 +183,31 @@ describe PryNote do
       end
     end
 
-    describe "-m switch (used to amend note inline and bypass editor)" do
-      it 'should amend the content of a note' do
-        @t.process_command "note add PryNote::TestClass -m 'my note1'"
-        @t.process_command "note edit PryNote::TestClass:1 -m 'bing'"
-        PryNote.notes["PryNote::TestClass"].count.should == 1
-        PryNote.notes["PryNote::TestClass"].first.should =~ /bing/
-      end
+    it 'should amend the content of a note with -m' do
+      @t.process_command "note add PryNote::TestClass -m 'my note1'"
+      @t.process_command "note edit PryNote::TestClass:1 -m 'bing'"
+      PryNote.notes["PryNote::TestClass"].count.should == 1
+      PryNote.notes["PryNote::TestClass"].first.should =~ /bing/
+    end
+
+    # this is a regression against a bug which made it impossible to ever
+    # edit a note in an editor
+    it 'should not raise an exception when amending content without -m' do
+      Pry.config.editor = proc { nil }
+      @t.process_command "note add PryNote::TestClass -m 'my note1'"
+
+      capture_exception do
+        @t.process_command "note edit PryNote::TestClass:1"
+      end.is_a?(Exception).should == false
+    end
+
+    it 'should leave note unchanged when no changes are made in editor' do
+      Pry.config.editor = proc { nil }
+      @t.process_command "note add PryNote::TestClass -m 'my note1'"
+      @t.process_command "note edit PryNote::TestClass:1"
+
+      PryNote.notes["PryNote::TestClass"].count.should == 1
+      PryNote.notes["PryNote::TestClass"].first.should =~ /my note1/
     end
   end
 

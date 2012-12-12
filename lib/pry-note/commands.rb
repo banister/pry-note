@@ -151,7 +151,7 @@ Pry::Commands.create_command "note" do
     if message
       new_content = message
     else
-      old_content = notes[co_name][note_number.to_i - 1]
+      old_content = notes[co_name][note_number_s.to_i - 1]
       new_content = edit_note(co_name, old_content.to_s)
     end
 

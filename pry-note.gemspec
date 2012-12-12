@@ -2,11 +2,11 @@
 
 Gem::Specification.new do |s|
   s.name = "pry-note"
-  s.version = "0.2.7"
+  s.version = "0.2.8"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["John Mair (banisterfiend)"]
-  s.date = "2012-12-06"
+  s.date = "2012-12-12"
   s.description = "Ease refactoring and exploration by attaching notes to methods and classes in Pry"
   s.email = "jrmair@gmail.com"
   s.files = ["README.md", "Rakefile", "lib/pry-note.rb", "lib/pry-note/commands.rb", "lib/pry-note/hooks.rb", "lib/pry-note/version.rb", "pry-note.gemspec", "test/helper.rb", "test/test_pry_note.rb"]
