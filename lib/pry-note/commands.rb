@@ -60,6 +60,7 @@ Pry::Commands.create_command "note" do
       add_note(opts.arguments.first, cmd_opts[:message])
     elsif opts.command?(:show)
       cmd_opts = opts[:show]
+      binding.pry
       stagger_output create_note_output(opts.arguments.first, cmd_opts[:verbose])
     elsif opts.command?(:list)
       cmd_opts = opts[:list]
@@ -91,7 +92,7 @@ Pry::Commands.create_command "note" do
   end
 
   def retrieve_code_object_safely(name)
-    PryNote.retrieve_code_object_safely(name, target, _pry_)
+    PryNote.retrieve_code_object_safely(name, _pry_)
   end
 
   def default_object_name

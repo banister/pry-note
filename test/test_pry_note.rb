@@ -192,7 +192,7 @@ describe PryNote do
       PryNote.notes["PryNote::TestClass"].first.should =~ /bing/
     end
 
-    # this is a regression against a bug which made it impossible to ever
+    # this is a regression test against a bug which made it impossible to ever
     # edit a note in an editor
     it 'should not raise an exception when amending content without -m' do
       Pry.config.editor = proc { nil }

@@ -29,9 +29,8 @@ module PryNote
   end
 
   # @return [Pry::Method, Pry::WrappedModule, Pry::Command] The code_object
-  def self.retrieve_code_object_safely(name, target, _pry_)
-    code_object = Pry::Helpers::CommandHelpers.retrieve_code_object_from_string(name, target)  ||
-      _pry_.commands.find_command(name)
+  def self.retrieve_code_object_safely(name, _pry_)
+    code_object = Pry::CodeObject.lookup(name, _pry_)
 
     if !code_object
       raise Pry::CommandError, "No code object found named #{name}"
